@@ -2,7 +2,9 @@
 """
 This module contains two classes:
 The Zeeman Class 
+    - main module that can calculate level splittings for j manifold at a fixed magnetic field
 The QuantumNumbers Class
+    - convenience class for providing preset quantum numbers for different isotopes
 use
 from zeeman_module import Zeeman,QuantumNumbers
 then add plotting code as shown below
@@ -22,12 +24,12 @@ class Zeeman(object):
     the program will automatically calculate all associated hyperfine states.
     Certain coefficients must be provided for the given atom.
     Ahfs  in Joules
-    Bhfs  in Joules
+    Bhfs  in Joules (for j != 1/2)
     (and in principle gs,gl,gi though these don't change by much so these are 
     probably not too critical' see #Rev. Mod. Phys. 49, 31 (1977).)
 
     note that in the high field regime:
-    	The energies are then given to lowest order by [20]
+    	The energies are then given to lowest order by 
 	E|J mJ I mI>= 
 	Ahfs mJ mI + 
 	Bhfs*{3(mJ mI )**2 + 3/2 mJ mI − I(I + 1)J(J + 1)/(2J(2J − 1)I(2I − 1))}+ 
@@ -235,13 +237,17 @@ class Zeeman(object):
         a gross sort is performed by <m_f> for each eigenstate.  This is possible
         because mf = mi + mj is preserved and remains the same for each of these 
         states.  However there are several states with the same m_f from different
-        f or j states.
-        so now we 'assume' that the states with the same m_f never cross.
+        f or j states.  We can take the eigenstates and find the expectation value of 
+        mf for each of these and order the states by these mf values and then for the 
+        states that have the same mf we will separate these as follows.
+        We 'assume' that the states with the same m_f never cross.
         therefore m_f1 will always have a lesser evalue than m_f2 so that we can 
-        break the degeneracy by adding a small value proportional to the evalues
-        but much less than the m_f splitting (1) so we use dE = evalues/(maxevalue*10).
-        now we argsort(<mf>+dE) to get the arguments that would put these values
-        in order and use them to order the eigen values then append this to the 
+        break the degeneracy by adding a small value to the mf values proportional to 
+        the evalues but much less than the typical m_f splitting (Order(1))
+        So we use dx = evalues_mf/(evalue_range*100). (ie dx = [0 to .01])
+        now we argsort(<mf>+dx) to get the arguments that would put these values
+        in order (always the same order since dx will always be higher for one mf state) 
+        and use them to order the eigen values then append this to the 
         values.  Note that this is the order of the jstates vector
         '''
         mf_values = [mf for (f,mf) in self.fstates]
@@ -251,7 +257,6 @@ class Zeeman(object):
             # where Vq = sum(Cqi*|f,mf>_i) hence Cqi is the eigenvector
             # matrix.transpose().  In numpy this sum is just C*C*mf_values
             # summed over the rows.  
-        #sortgroup2 = self.evals/(10*numpy.abs(self.evals).max())
         pos_vals = self.evals-self.evals.min()
         sortgroup2 = pos_vals/(100*pos_vals.max())
         sortvalues = sortgroup1 + sortgroup2
@@ -484,7 +489,7 @@ if __name__ == "__main__":
     s10='ca48_31d2'
     s11='lu176_2d3_2'
     
-    Q = QuantumNumbers(s7)  #QuantumNumbers class instance for this isotope
+    Q = QuantumNumbers(s6)  #QuantumNumbers class instance for this isotope
     M,L,S,I,J,Ahfs,Bhfs,gi = Q.numbers
     Z = Zeeman(L,S,I,J,Ahfs,Bhfs,gi)  #Zeeman class instance for L,S,I,J,Ahfs,Bhfs
     print "g_j=",Z.gj
